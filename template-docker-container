@@ -1,6 +1,14 @@
+Step 1. Login as root on wsl 
+
+Step 2. Create file with the below lines and make it executable.
+
+$ touch /root/script.sh
+$ chmod +X /root/script.sh
+
+##########script.sh ##############
+#!/bin/bash
 mkdir /root/docker-test
 cd /root/docker-test
-
 echo "FROM ubuntu:latest" > /root/docker-test/Dockerfile 
 echo "RUN apt update && apt install  openssh-server sudo -y " >> /root/docker-test/Dockerfile 
 echo "RUN apt-get -y install net-tools " >> /root/docker-test/Dockerfile 
@@ -21,16 +29,15 @@ echo "RUN  echo 'petrisor:123' | chpasswd " >> /root/docker-test/Dockerfile
 echo "RUN  echo 'root:123' | chpasswd " >> /root/docker-test/Dockerfile 
 echo "EXPOSE 22 " >> /root/docker-test/Dockerfile 
 echo "CMD ["/usr/sbin/sshd","-D"] " >> /root/docker-test/Dockerfile 
-
-
 cd /root/docker-test
-
 docker build -t anca_image .
-
 docker images | grep anca
-
 docker run -it -d -p 2222:22 --name ansible_server anca_image /bin/sh
-
 docker exec ansible_server service ssh start
-
 docker ps  | grep ansible
+########################
+
+Login via ssh to the docker container
+
+$ ssh root@0.0.0.0 -p 2222
+done
