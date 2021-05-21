@@ -1,0 +1,36 @@
+mkdir /root/docker-test
+cd /root/docker-test
+
+echo "FROM ubuntu:latest" > /root/docker-test/Dockerfile 
+echo "RUN apt update && apt install  openssh-server sudo -y " >> /root/docker-test/Dockerfile 
+echo "RUN apt-get -y install net-tools " >> /root/docker-test/Dockerfile 
+echo "RUn apt-get -y install iputils-ping " >> /root/docker-test/Dockerfile 
+echo "RUN apt-get -y install software-properties-common " >> /root/docker-test/Dockerfile 
+echo "RUN add-apt-repository ppa:deadsnakes/ppa " >> /root/docker-test/Dockerfile 
+echo "RUN apt-get -y update " >> /root/docker-test/Dockerfile 
+echo "RUN apt-get -y install python3.8 " >> /root/docker-test/Dockerfile 
+echo "RUN ln -sf /usr/bin/python3 /usr/bin/python " >> /root/docker-test/Dockerfile 
+echo "RUN apt-get -y install nano " >> /root/docker-test/Dockerfile 
+echo "RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -G sudo -u 1000 petrisor " >> /root/docker-test/Dockerfile 
+echo "RUN usermod -aG sudo petrisor " >> /root/docker-test/Dockerfile 
+echo "RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config " >> /root/docker-test/Dockerfile 
+echo "RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config " >> /root/docker-test/Dockerfile 
+echo "RUN /etc/init.d/ssh start " >> /root/docker-test/Dockerfile 
+echo "RUN /etc/init.d/ssh restart " >> /root/docker-test/Dockerfile 
+echo "RUN  echo 'petrisor:123' | chpasswd " >> /root/docker-test/Dockerfile 
+echo "RUN  echo 'root:123' | chpasswd " >> /root/docker-test/Dockerfile 
+echo "EXPOSE 22 " >> /root/docker-test/Dockerfile 
+echo "CMD ["/usr/sbin/sshd","-D"] " >> /root/docker-test/Dockerfile 
+
+
+cd /root/docker-test
+
+docker build -t anca_image .
+
+docker images | grep anca
+
+docker run -it -d -p 2222:22 --name ansible_server anca_image /bin/sh
+
+docker exec ansible_server service ssh start
+
+docker ps  | grep ansible
