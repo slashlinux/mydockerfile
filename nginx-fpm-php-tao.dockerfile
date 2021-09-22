@@ -1,9 +1,5 @@
 FROM debian:buster
 
-RUN usermod -u 1000 www-data
-RUN usermod -G staff www-data
-
-LABEL maintainer="Petrisor Ciocoiu petrisor.ciocoiu@gmail.com"
 
 # Let the container know that there is no tty
 ENV DEBIAN_FRONTEND noninteractive
@@ -11,6 +7,16 @@ ENV NGINX_VERSION 1.19.10-1~buster
 ENV php_conf /etc/php/7.0/fpm/php.ini
 ENV fpm_conf /etc/php/7.0/fpm/pool.d/www.conf
 ENV COMPOSER_VERSION 2.0.13
+
+
+RUN usermod -u 1000 www-data
+RUN usermod -G staff www-data
+
+LABEL maintainer="Petrisor Ciocoiu petrisor.ciocoiu@gmail.com"
+
+# Let the container know that there is no tty
+ENV php_conf /etc/php/7.0/fpm/php.ini
+ENV fpm_conf /etc/php/7.0/fpm/pool.d/www.conf
 
 # Install Basic Requirements
 RUN buildDeps='curl gcc make autoconf libc-dev zlib1g-dev pkg-config' \
@@ -39,7 +45,6 @@ RUN buildDeps='curl gcc make autoconf libc-dev zlib1g-dev pkg-config' \
             nano \
             zip \
             unzip \
-            net-tools \
             python-pip \
             python-setuptools \
             git \
@@ -70,11 +75,6 @@ RUN buildDeps='curl gcc make autoconf libc-dev zlib1g-dev pkg-config' \
     && pip install supervisor supervisor-stdout \
     && echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d \
     && rm -rf /etc/nginx/conf.d/default.conf \
-    && sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" ${php_conf} \
-    && sed -i -e "s/memory_limit\s*=\s*.*/memory_limit = 256M/g" ${php_conf} \
-    && sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 100M/g" ${php_conf} \
-    && sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 100M/g" ${php_conf} \
-    && sed -i -e "s/variables_order = \"GPCS\"/variables_order = \"EGPCS\"/g" ${php_conf} \
     && sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/7.0/fpm/php-fpm.conf \
     && sed -i -e "s/;catch_workers_output\s*=\s*yes/catch_workers_output = yes/g" ${fpm_conf} \
     && sed -i -e "s/pm.max_children = 5/pm.max_children = 4/g" ${fpm_conf} \
@@ -82,7 +82,10 @@ RUN buildDeps='curl gcc make autoconf libc-dev zlib1g-dev pkg-config' \
     && sed -i -e "s/pm.min_spare_servers = 1/pm.min_spare_servers = 2/g" ${fpm_conf} \
     && sed -i -e "s/pm.max_spare_servers = 3/pm.max_spare_servers = 4/g" ${fpm_conf} \
     && sed -i -e "s/pm.max_requests = 500/pm.max_requests = 200/g" ${fpm_conf} \
-    && sed -i -e "s/www-data/nginx/g" ${fpm_conf} \
+    && sed -i -e "s/user = www-data/;user = www-data/g" ${fpm_conf} \
+    && sed -i -e "s/^group = www-data/;group = www-data/g" ${fpm_conf} \
+    && sed -i -e "s/listen.owner = www-data/;listen.owner = www-data/g" ${fpm_conf} \
+    && sed -i -e "s/listen.group = www-data/;listen.group = www-data/g" ${fpm_conf} \
     && sed -i -e "s/^;clear_env = no$/clear_env = no/" ${fpm_conf} \
     && echo "extension=redis.so" > /etc/php/7.0/mods-available/redis.ini \
     && echo "extension=memcached.so" > /etc/php/7.0/mods-available/memcached.ini \
@@ -115,6 +118,7 @@ COPY ./supervisord.conf /etc/supervisord.conf
 COPY ./default.conf /etc/nginx/conf.d/default.conf
 
 
+
 RUN mkdir -p /var/www/html
 
 ENV TAO_VERSION 3.2.0-RC2_build
@@ -126,11 +130,16 @@ RUN curl -o tao.zip -SL http://releases.taotesting.com/TAO_${TAO_VERSION}.zip \
   && mv /var/www/html/TAO_${TAO_VERSION}/* /var/www/html/ \
   && rm tao.zip \
   && chown -R www-data:www-data /var/www/html/ \
-  && chmod 777 -R /var/www/html/
-  
+  && chmod 777 -R /var/log/nginx/ \
+  && chmod 777 -R /var/cache/nginx/ \
+  && chmod 777 -R /var/www/html/ \
+  && chmod 777 -R /var/log/ \
+  && chmod 777 -R /run/ \
+  && chmod 777 -R /var/run/
 
 # Copy Scripts
 COPY ./start.sh /start.sh
+
 
 EXPOSE 80
 
